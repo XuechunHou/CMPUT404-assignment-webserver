@@ -57,14 +57,17 @@ class MyWebServer(socketserver.BaseRequestHandler):
         # verify request method
         if ( not self.is_valid_request_method(request_method)):
             # request method not GET, send 405
-            method_not_found_response = self.http_version + " " + str(HTTPStatus.METHOD_NOT_ALLOWED.value) + " " + HTTPStatus.METHOD_NOT_ALLOWED.phrase
+            method_not_found_response = self.http_version + " " + str(HTTPStatus.METHOD_NOT_ALLOWED.value) + " " + HTTPStatus.METHOD_NOT_ALLOWED.phrase + "\r\n"
             self.request.sendall(bytearray(method_not_found_response,'utf-8'))
+            return
+            
         # verify if file path valid 
         file_path = self.base_dir + request_url
         if (not self.is_valid_file_path(file_path)):
             # path not valid; either DNE, or exist outside of www directory, send 404
-            not_found_response = self.http_version + " " + str(HTTPStatus.NOT_FOUND.value) + " " + HTTPStatus.NOT_FOUND.phrase
+            not_found_response = self.http_version + " " + str(HTTPStatus.NOT_FOUND.value) + " " + HTTPStatus.NOT_FOUND.phrase + "\r\n"
             self.request.sendall(bytearray(not_found_response,'utf-8'))
+            return
 
         # if it's requesting a file
         if (os.path.isfile(file_path)):
@@ -91,7 +94,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
     
     def send_redirect_response(self, directory_path):
         
-        moved_permanently_status_code = self.http_version + " " + str(HTTPStatus.MOVED_PERMANENTLY.value) + " " + HTTPStatus.MOVED_PERMANENTLY.phrase
+        moved_permanently_status_code = self.http_version + " " + str(HTTPStatus.MOVED_PERMANENTLY.value) + " " + HTTPStatus.MOVED_PERMANENTLY.phrase 
         location = "Location: " + "http://" + self.server.server_address[0] +  ":" + str(self.server.server_address[1]) + directory_path + "/\r\n"
         response_array = [moved_permanently_status_code, location]
         moved_permanently_response = "\r\n".join(response_array)
@@ -112,6 +115,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         # send response 
         response_array = [ok_response, content_type, "Connection: Closed", "", file_content]
         response = "\r\n".join(response_array)
+        response += "\r\n"
         self.request.sendall(bytearray(response,'utf-8'))
         
 
