@@ -29,6 +29,7 @@ class TestYourWebserver(unittest.TestCase):
         url = self.baseurl + "/base.css"
         req = request.urlopen(url, None, 3)
         self.assertTrue( req.getcode()  == 200 , "200 OK Not FOUND!")
+        
         self.assertTrue( req.info().get_content_type() == "text/css", ("Bad mimetype for css! %s" % req.info().get_content_type()))
 
     def test_get_root(self):
