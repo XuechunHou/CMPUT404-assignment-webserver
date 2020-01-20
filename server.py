@@ -57,15 +57,25 @@ class MyWebServer(socketserver.BaseRequestHandler):
         # verify request method
         if ( not self.is_valid_request_method(request_method)):
             # request method not GET, send 405
-            method_not_found_response = self.http_version + " " + str(HTTPStatus.METHOD_NOT_ALLOWED.value) + " " + HTTPStatus.METHOD_NOT_ALLOWED.phrase + "\r\n"
-            self.request.sendall(bytearray(method_not_found_response,'utf-8'))
+            method_not_allowed_status_code = self.http_version + " " + str(HTTPStatus.METHOD_NOT_ALLOWED.value) + " " + HTTPStatus.METHOD_NOT_ALLOWED.phrase
+            content_length_header = "Content-Length: 0"
+            content_type = "Content-Type: text/plain"
+            response_array = [method_not_allowed_status_code, content_type, content_length_header]
+            method_not_allowed_response = "\r\n".join(response_array) + "\r\n\r\n"
+            
+            self.request.sendall(bytearray(method_not_allowed_response,'utf-8'))
             return
             
         # verify if file path valid 
         file_path = self.base_dir + request_url
         if (not self.is_valid_file_path(file_path)):
             # path not valid; either DNE, or exist outside of www directory, send 404
-            not_found_response = self.http_version + " " + str(HTTPStatus.NOT_FOUND.value) + " " + HTTPStatus.NOT_FOUND.phrase + "\r\n"
+            not_found_status_code = self.http_version + " " + str(HTTPStatus.NOT_FOUND.value) + " " + HTTPStatus.NOT_FOUND.phrase
+            content_length_header = "Content-Length: 0"
+            content_type = "Content-Type: text/plain"
+            response_array = [not_found_status_code, content_type, content_length_header]
+            not_found_response = "\r\n".join(response_array) + "\r\n\r\n"
+            
             self.request.sendall(bytearray(not_found_response,'utf-8'))
             return
 
@@ -75,6 +85,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         # request for a directory 
         else:
             # either send index.html or redirect url 301 
+           
             self.handle_directory_request(request_url)
     
 
@@ -82,7 +93,9 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
     def handle_directory_request(self, directory_path):
         has_end = directory_path[-1] == '/'
+        
         if (has_end):
+            
             self.send_file(self.base_dir + directory_path + "index.html")
         else:
             # needs a url redirection 
@@ -95,9 +108,11 @@ class MyWebServer(socketserver.BaseRequestHandler):
     def send_redirect_response(self, directory_path):
         
         moved_permanently_status_code = self.http_version + " " + str(HTTPStatus.MOVED_PERMANENTLY.value) + " " + HTTPStatus.MOVED_PERMANENTLY.phrase 
-        location = "Location: " + "http://" + self.server.server_address[0] +  ":" + str(self.server.server_address[1]) + directory_path + "/\r\n"
-        response_array = [moved_permanently_status_code, location]
-        moved_permanently_response = "\r\n".join(response_array)
+        location = "Location: " + "http://" + self.server.server_address[0] +  ":" + str(self.server.server_address[1]) + directory_path + "/"
+        content_length_header = "Content-Length: 0"
+        content_type = "Content-Type: text/plain"
+        response_array = [moved_permanently_status_code, content_type, content_length_header, location]
+        moved_permanently_response = "\r\n".join(response_array) + "\r\n\r\n"
         
         self.request.sendall(bytearray(moved_permanently_response,'utf-8'))
 
@@ -110,12 +125,14 @@ class MyWebServer(socketserver.BaseRequestHandler):
             content_type = "Content-Type: text/css"
         # read file 
         file_content = open(file_path, "r").read()
+        content_length_header = "Content-Length: {}".format(len(file_content))
         ok_response = self.http_version + " " + str(HTTPStatus.OK.value) + " " + HTTPStatus.OK.phrase
         
         # send response 
-        response_array = [ok_response, content_type, "Connection: Closed", "", file_content]
+        response_array = [ok_response, content_type, content_length_header, "Connection: Closed", "", file_content]
         response = "\r\n".join(response_array)
         response += "\r\n"
+        
         self.request.sendall(bytearray(response,'utf-8'))
         
 
@@ -138,6 +155,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         
     def parse(self):
         self.data = self.data.decode("utf-8");
+
         return self.data.split("\r\n")[0].split(" ")
         
 
